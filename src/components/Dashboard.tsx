@@ -1,22 +1,38 @@
 import { useState, useEffect } from 'react';
 import { db, auth } from '../lib/firebase';
 import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { LogEntry } from '../types';
+import { LogEntry, UserProfile } from '../types';
 import { motion } from 'motion/react';
-import { Brain, Zap, Activity, TrendingUp, Sparkles, Clock, ChevronRight, LifeBuoy, Moon } from 'lucide-react';
+import { Brain, Zap, Activity, TrendingUp, Sparkles, ChevronRight, LifeBuoy, Moon, Loader2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { format } from 'date-fns';
 import { getHealthInsights } from '../services/geminiService';
+import { doc, getDoc } from 'firebase/firestore';
 import { useLanguage } from '../lib/LanguageContext';
 
 export default function Dashboard() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [insights, setInsights] = useState<any[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const { t } = useLanguage();
 
   useEffect(() => {
     if (!auth.currentUser) return;
+
+    // Fetch user profile
+    const fetchProfile = async () => {
+      try {
+        const docRef = doc(db, 'users', auth.currentUser!.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setProfile(docSnap.data() as UserProfile);
+        }
+      } catch (e) {
+        console.error("Error fetching profile:", e);
+      }
+    };
+    fetchProfile();
 
     const q = query(
       collection(db, 'logs'),
@@ -36,7 +52,7 @@ export default function Dashboard() {
   const generateInsights = async () => {
     if (logs.length < 3) return;
     setAnalyzing(true);
-    const newInsights = await getHealthInsights(logs);
+    const newInsights = await getHealthInsights(logs, profile);
     setInsights(newInsights);
     setAnalyzing(false);
   };
@@ -387,14 +403,15 @@ export default function Dashboard() {
         <section className="bg-black/40 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-xl">
           <div className="p-6 border-b border-white/10 flex items-center justify-between">
              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
-                <h3 className="text-xs uppercase tracking-[0.2em] font-bold text-white/80">{t.dashboard.insightEngine}</h3>
+                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                <h3 className="text-xs uppercase tracking-[0.2em] font-bold text-emerald-400">Proactive AI Coach</h3>
              </div>
              <button 
                 onClick={generateInsights}
                 disabled={analyzing || logs.length < 3}
-                className="text-[10px] uppercase font-bold tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-4 py-2 rounded-full transition-all hover:bg-emerald-500/20 disabled:opacity-30"
+                className="text-[10px] uppercase font-bold tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-4 py-2 rounded-full transition-all hover:bg-emerald-500/20 disabled:opacity-30 flex items-center gap-2"
              >
+                {analyzing ? <Loader2 size={12} className="animate-spin" /> : null}
                 {analyzing ? t.dashboard.calibrating : t.dashboard.syncEngine}
              </button>
           </div>
@@ -419,7 +436,7 @@ export default function Dashboard() {
                     insight.category === 'Neurochemical' ? "text-blue-400" :
                     "text-orange-400"
                   )}>{insight.title}</p>
-                  <p className="text-sm text-white/70 leading-relaxed font-light">{insight.insight}</p>
+                  <p className="text-sm text-white/90 leading-relaxed font-light">{insight.insight}</p>
                   <p className="text-[9px] mt-2 text-white/20 font-mono tracking-tighter uppercase">{insight.category} {t.dashboard.analysis}</p>
                 </motion.div>
               ))

@@ -60,5 +60,6 @@ export interface UserProfile {
   displayName: string;
   createdAt: any;
   biomarkerGoals?: Record<string, number>;
+  lifestyleGoals?: string[];
   onboardingCompleted?: boolean;
 }

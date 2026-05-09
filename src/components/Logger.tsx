@@ -2,10 +2,10 @@ import { useState, ChangeEvent } from 'react';
 import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { motion } from 'motion/react';
-import { Zap, Brain, Coffee, Activity, ChevronRight, Check, AlertCircle, Sparkles, Loader2, Camera } from 'lucide-react';
+import { Zap, Brain, Coffee, Activity, ChevronRight, Check, AlertCircle, Sparkles, Loader2, Camera, Mic, MicOff } from 'lucide-react';
 import { LogType, StateLogData, MealLogData, EventLogData, LogEntry } from '../types';
 import { useLanguage } from '../lib/LanguageContext';
-import { getImmediateLogFeedback } from '../services/geminiService';
+import { getImmediateLogFeedback, parseSpokenLog } from '../services/geminiService';
 import { extractSleepFromImage } from '../services/sleepExtractionService';
 
 interface LoggerProps {
@@ -21,6 +21,7 @@ export default function Logger({ onComplete }: LoggerProps) {
   const [aiLoading, setAiLoading] = useState(false);
   const [showAi, setShowAi] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [isParsingSpeech, setIsParsingSpeech] = useState(false);
   const { t } = useLanguage();
 
   // Form State
@@ -40,6 +41,103 @@ export default function Logger({ onComplete }: LoggerProps) {
   const moodTags = ['Calm', 'Anxious', 'Stressed', 'Hangry', 'Energized'];
   const [selectedGut, setSelectedGut] = useState<string[]>([]);
   const [selectedMood, setSelectedMood] = useState<string[]>([]);
+  const [eventStressor, setEventStressor] = useState('');
+  const [eventIntensity, setEventIntensity] = useState(5);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recognitionInstance, setRecognitionInstance] = useState<any>(null);
+
+  const toggleRecording = () => {
+    if (isRecording && recognitionInstance) {
+      recognitionInstance.stop();
+      return;
+    }
+
+    // @ts-ignore
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in your browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    let finalTranscript = notes;
+
+    recognition.onstart = () => {
+      setIsRecording(true);
+      setRecognitionInstance(recognition);
+    };
+
+    recognition.onresult = (event: any) => {
+      let interimTranscript = '';
+      let newFinal = finalTranscript;
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          newFinal += (newFinal ? ' ' : '') + event.results[i][0].transcript;
+        } else {
+          interimTranscript += event.results[i][0].transcript;
+        }
+      }
+      finalTranscript = newFinal;
+      setNotes(finalTranscript + (interimTranscript ? ' ' + interimTranscript : ''));
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error(event.error);
+      if (event.error === 'not-allowed') {
+        alert("Mikrofon-Zugriff verweigert. Bitte erlaube den Mikrofonzugriff in deinem Browser.");
+      }
+      setIsRecording(false);
+      setRecognitionInstance(null);
+    };
+
+    recognition.onend = async () => {
+      setIsRecording(false);
+      setRecognitionInstance(null);
+      
+      if (finalTranscript.trim()) {
+        setIsParsingSpeech(true);
+        try {
+          const parsed = await parseSpokenLog(finalTranscript, type);
+          if (parsed) {
+            if (type === 'state') {
+              if (parsed.energy !== undefined && parsed.energy !== null) setEnergy(parsed.energy);
+              if (parsed.focus !== undefined && parsed.focus !== null) setFocus(parsed.focus);
+              if (parsed.sleepDuration !== undefined && parsed.sleepDuration !== null) setSleepDist(parsed.sleepDuration);
+              if (parsed.sleepQuality !== undefined && parsed.sleepQuality !== null) setSleepQuality(parsed.sleepQuality);
+              if (parsed.remSleep !== undefined && parsed.remSleep !== null) setRemSleep(parsed.remSleep);
+              if (parsed.deepSleep !== undefined && parsed.deepSleep !== null) setDeepSleep(parsed.deepSleep);
+              if (parsed.lightSleep !== undefined && parsed.lightSleep !== null) setLightSleep(parsed.lightSleep);
+              if (parsed.rhr !== undefined && parsed.rhr !== null) setRhr(parsed.rhr);
+              if (parsed.moodTags && Array.isArray(parsed.moodTags)) {
+                 setSelectedMood(parsed.moodTags.filter((t: string) => moodTags.includes(t)));
+              }
+              if (parsed.gutTags && Array.isArray(parsed.gutTags)) {
+                 setSelectedGut(parsed.gutTags.filter((t: string) => gutTags.includes(t)));
+              }
+            } else if (type === 'meal') {
+              // we don't have many mapped to state for meal right now, but could
+            } else if (type === 'event') {
+              if (parsed.stressor) setEventStressor(parsed.stressor);
+              if (parsed.intensity !== undefined && parsed.intensity !== null) setEventIntensity(parsed.intensity);
+            }
+            if (parsed.notes) {
+              setNotes(parsed.notes);
+            } else {
+               // Leave original notes if AI wiped it out completely, or just let the updated finalTranscript sit
+            }
+          }
+        } catch (err) {
+          console.error("Failed to parse speech:", err);
+        }
+        setIsParsingSpeech(false);
+      }
+    };
+
+    recognition.start();
+  };
 
   const toggleTag = (tag: string, list: string[], setList: (l: string[]) => void) => {
     if (list.includes(tag)) {
@@ -88,6 +186,7 @@ export default function Logger({ onComplete }: LoggerProps) {
         focus,
         moodTags: selectedMood,
         gutTags: selectedGut,
+        notes,
         ...(subType === 'morning' ? { 
           sleepDuration: sleepDist, 
           sleepQuality, 
@@ -101,6 +200,12 @@ export default function Logger({ onComplete }: LoggerProps) {
       data = {
         foodSequencing: sequence,
         hydrationContext: hydration,
+        notes
+      };
+    } else if (type === 'event') {
+      data = {
+        stressor: eventStressor,
+        intensity: eventIntensity,
         notes
       };
     }
@@ -386,15 +491,6 @@ export default function Logger({ onComplete }: LoggerProps) {
                </button>
             </div>
 
-            <div className="space-y-2">
-               <label className="text-[10px] uppercase font-mono text-white/40 tracking-widest">{t.logger.labels.context}</label>
-               <textarea 
-                value={notes} 
-                onChange={e => setNotes(e.target.value)}
-                placeholder={t.logger.placeholders.notes}
-                className="w-full h-32 bg-white/5 border border-white/10 rounded-xl p-4 text-sm focus:border-emerald-500/40 outline-none resize-none font-light italic text-white"
-               />
-            </div>
           </div>
         )}
 
@@ -402,16 +498,63 @@ export default function Logger({ onComplete }: LoggerProps) {
           <div className="space-y-6">
             <div className="space-y-2">
                <label className="text-[10px] uppercase font-mono text-white/40 tracking-widest">{t.logger.labels.stressor}</label>
-               <input type="text" placeholder={t.logger.placeholders.stress} className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-sm outline-none focus:border-emerald-500/40 text-white" />
+               <input 
+                 type="text" 
+                 value={eventStressor}
+                 onChange={e => setEventStressor(e.target.value)}
+                 placeholder={t.logger.placeholders.stress} 
+                 className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-sm outline-none focus:border-emerald-500/40 text-white" 
+               />
             </div>
             <div className="space-y-4">
                <div className="flex justify-between items-center text-[10px] uppercase font-mono text-white/40">
                  <span>{t.logger.labels.intensity}</span>
+                 <span className="text-emerald-400 font-bold">{eventIntensity}/10</span>
                </div>
-               <input type="range" className="w-full accent-emerald-500 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer" />
+               <input 
+                 type="range" 
+                 min="1" max="10" 
+                 value={eventIntensity}
+                 onChange={e => setEventIntensity(parseInt(e.target.value))}
+                 className="w-full accent-emerald-500 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer" 
+               />
             </div>
           </div>
         )}
+
+        {/* Voice & Notes (Available for all types) */}
+        <div className="space-y-2 pt-6 border-t border-white/10 mt-6">
+           <div className="flex items-center justify-between">
+             <label className="text-[10px] uppercase font-mono text-white/40 tracking-widest">
+               {t.logger.labels.context} / Notes
+             </label>
+             <button
+                onClick={toggleRecording}
+                disabled={isParsingSpeech}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all ${
+                  isRecording 
+                    ? 'bg-red-500/10 text-red-400 border border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.5)]' 
+                    : isParsingSpeech
+                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                    : 'bg-white/5 text-white/60 border border-white/5 hover:border-white/10'
+                }`}
+             >
+                {isRecording ? (
+                  <><MicOff size={12} className="animate-pulse" /> Recording...</>
+                ) : isParsingSpeech ? (
+                  <><Loader2 size={12} className="animate-spin" /> Processing AI...</>
+                ) : (
+                  <><Mic size={12} /> Dictate</>
+                )}
+             </button>
+           </div>
+           <textarea 
+            value={notes} 
+            onChange={e => setNotes(e.target.value)}
+            placeholder={t.logger.placeholders.notes || "Add any additional context or dictate notes here..."}
+            className="w-full h-32 bg-white/5 border border-white/10 rounded-xl p-4 text-sm focus:border-emerald-500/40 outline-none resize-none font-light italic text-white"
+           />
+        </div>
 
         <button
           onClick={handleLog}

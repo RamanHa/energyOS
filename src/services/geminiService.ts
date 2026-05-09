@@ -13,7 +13,7 @@ function getAI(): GoogleGenAI {
   return aiInstance;
 }
 
-export async function getHealthInsights(logs: LogEntry[]) {
+export async function getHealthInsights(logs: LogEntry[], profile?: any) {
   const model = "gemini-3-flash-preview";
   
   const logSummary = logs.map(log => ({
@@ -22,14 +22,24 @@ export async function getHealthInsights(logs: LogEntry[]) {
     details: log.data
   }));
 
+  const goalsText = profile?.lifestyleGoals && profile.lifestyleGoals.length > 0 
+    ? `User's Lifestyle Goals: ${profile.lifestyleGoals.join(", ")}` 
+    : "No explicit lifestyle goals set.";
+
   const prompt = `
-    As a specialized Bio-hacking AI coach, analyze the following biological logs and provide 3-5 high-impact, actionable insights.
-    Focus on correlation between food, habits, and energy/focus output.
+    As a proactive Bio-hacking AI coach, carefully monitor the user's recent biological logs against their specific lifestyle goals.
+    
+    ${goalsText}
     
     Logs:
     ${JSON.stringify(logSummary, null, 2)}
     
-    Format your response as a JSON array of objects with "title", "insight", and "category" (e.g., Metabolic, Neurochemical, Sleep).
+    Provide 3 high-impact, actionable coaching insights. If there are deviations from their goals or patterns (like low focus after certain meals, or poor sleep consistency), address them directly. Provide encouragement, ask targeted questions to provoke reflection, or suggest specific routines/interventions.
+    
+    Format your response as a JSON array of objects with:
+    - "title": A short catchy title.
+    - "insight": The coaching message, targeted question, or routine suggestion.
+    - "category": e.g., "Sleep Coaching", "Metabolic Feedback", "Goal Alignment".
   `;
 
   try {
@@ -86,6 +96,57 @@ export async function generateWeeklySynthesis(logs: LogEntry[]) {
   } catch (error) {
     console.error("Gemini Synthesis Error:", error);
     return null;
+  }
+}
+
+export async function parseSpokenLog(text: string, logType: string) {
+  const model = "gemini-3-flash-preview";
+  
+  const prompt = `
+    Extract structured data for a health logging app from the following spoken text.
+    The text may be in any language (e.g., German, English), but you must understand it and extract the numeric values or tags accordingly.
+    The current log category is: ${logType}.
+
+    Return ONLY a JSON object. Do not include any explanation.
+
+    If logType is "state", extract fields (if mentioned):
+    - energy: number (1-10)
+    - focus: number (1-5) (note: scale is 1 to 5)
+    - sleepDuration: number (hours)
+    - sleepQuality: number (1-10)
+    - remSleep: number (hours)
+    - deepSleep: number (hours)
+    - lightSleep: number (hours)
+    - rhr: number (resting heart rate in bpm)
+    - moodTags: array of strings (choose from exactly these in English: Calm, Anxious, Stressed, Hangry, Energized)
+    - gutTags: array of strings (choose from exactly these in English: Bloated, Light, Cramping, Optimal)
+
+    If logType is "meal", extract fields (if mentioned):
+    - timing: string (e.g., "fasting 16h")
+    - notes: string (e.g., "chicken and rice")
+
+    If logType is "event", extract fields (if mentioned):
+    - stressor: string (what happened)
+    - intensity: number (1-10)
+
+    If a field is not quantitatively or clearly mentioned, do not guess, simply omit it or return null for that field. Include original text or relevant parts in "notes".
+    
+    Spoken text: "${text}"
+  `;
+
+  try {
+    const response = await getAI().models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+
+    return JSON.parse(response.text || "{}");
+  } catch (error) {
+    console.error("Gemini Parse Speech Error:", error);
+    return {};
   }
 }
 
