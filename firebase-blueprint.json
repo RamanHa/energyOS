@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Stores user settings and metadata",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "biomarkerGoals": {
+          "type": "object",
+          "description": "User specific goals for biomarkers"
+        }
+      },
+      "required": ["email", "createdAt"]
+    },
+    "LogEntry": {
+      "title": "Log Entry",
+      "description": "Universal logging for states, meals, and events",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["state", "meal", "event", "sos"] },
+        "subType": { "type": "string", "description": "e.g. morning, interval, high-carb" },
+        "data": {
+          "type": "object",
+          "description": "Flexible payload based on type"
+        }
+      },
+      "required": ["userId", "timestamp", "type", "data"]
+    },
+    "LabResult": {
+      "title": "Lab Result",
+      "description": "Biomarker tracking entries",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "marker": { "type": "string" },
+        "value": { "type": "number" },
+        "unit": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "marker", "value", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Main user documents"
+    },
+    "/logs/{logId}": {
+      "schema": "LogEntry",
+      "description": "All activities and check-ins"
+    },
+    "/labs/{labId}": {
+      "schema": "LabResult",
+      "description": "Collection of blood test results"
+    }
+  }
+}

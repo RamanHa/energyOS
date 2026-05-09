@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    // --- Validation Blueprints ---
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'createdAt'])
+        && data.email is string
+        && data.createdAt is timestamp
+        && (!('displayName' in data) || data.displayName is string)
+        && (!('biomarkerGoals' in data) || data.biomarkerGoals is map)
+        && (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
+    function isValidLog(data) {
+      return data.keys().hasAll(['userId', 'timestamp', 'type', 'data'])
+        && data.userId == request.auth.uid
+        && data.timestamp == request.time
+        && data.type in ['state', 'meal', 'event', 'sos']
+        && data.data is map;
+    }
+
+    function isValidLab(data) {
+      return data.keys().hasAll(['userId', 'marker', 'value', 'date', 'createdAt'])
+        && data.userId == request.auth.uid
+        && data.marker is string
+        && data.value is number
+        && data.date is timestamp
+        && data.createdAt == request.time;
+    }
+
+    // --- Collection Routes ---
+
+    match /test/connection {
+      allow read: if isSignedIn();
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isVerified() && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isVerified()
+        && isValidUser(request.resource.data)
+        && request.resource.data.email == resource.data.email;
+    }
+
+    match /logs/{logId} {
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isVerified() 
+        && isValidLog(request.resource.data);
+      allow update: if false; 
+      allow delete: if isVerified() && resource.data.userId == request.auth.uid;
+    }
+
+    match /labs/{labId} {
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isVerified()
+        && isValidLab(request.resource.data);
+      allow update: if isVerified()
+        && resource.data.userId == request.auth.uid
+        && isValidLab(request.resource.data);
+      allow delete: if isVerified() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

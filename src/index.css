@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+}
+
+@layer base {
+  body {
+    @apply bg-[#050505] text-[#e5e7eb] selection:bg-emerald-500/30;
+  }
+}
+
+.glow-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.2;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.glow-top-left {
+  position: absolute;
+  top: -10%;
+  left: -5%;
+  width: 400px;
+  height: 400px;
+  border-radius: 9999px;
+  background-color: var(--color-emerald-500);
+  filter: blur(120px);
+}
+
+.glow-bottom-right {
+  position: absolute;
+  bottom: -10%;
+  right: -5%;
+  width: 500px;
+  height: 500px;
+  border-radius: 9999px;
+  background-color: theme('colors.blue.600');
+  filter: blur(150px);
+}
