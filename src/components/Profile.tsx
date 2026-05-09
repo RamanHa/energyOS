@@ -102,38 +102,59 @@ export default function Profile() {
     setLastSyncResult(null);
     try {
       const data = await fetchGoogleFitData(fitToken);
-      // Process data to extract latest day's sleep info and heart rate if needed
-      // Google Fit returns dataset points. Let's do a basic sync log.
       let sleepDurationHours = 0;
+      let steps = 0;
+      let cardio = 0;
+
       if (data && data.bucket && data.bucket.length > 0) {
-          // Just taking the latest day bucket for simplicity, or summing them up.
           const latestBucket = data.bucket[data.bucket.length - 1];
-          // We can parse the sleep segment dataset from latestBucket.dataset
-          // A very generic processing just to demonstrate sync adding a log.
-          const sleepDataset = latestBucket.dataset.find((d: any) => d.dataSourceId.includes('sleep'));
-          if (sleepDataset && sleepDataset.point && sleepDataset.point.length > 0) {
-              const p = sleepDataset.point[0];
-              if (p.value && p.value.length > 0) {
-                  // Usually, Google Fit sleep duration might be found or we calculate it.
-                  sleepDurationHours = 8; // Stubbed for demonstration
+          const sleepDataset = latestBucket.dataset?.find((d: any) => d.dataSourceId?.includes('sleep'));
+          const stepsDataset = latestBucket.dataset?.find((d: any) => d.dataSourceId?.includes('step_count'));
+          const cardioDataset = latestBucket.dataset?.find((d: any) => d.dataSourceId?.includes('heart_minutes'));
+          
+          if (sleepDataset?.point?.length > 0) {
+            let totalSleepMs = 0;
+            sleepDataset.point.forEach((p: any) => {
+              const start = parseInt(p.startTimeNanos || '0');
+              const end = parseInt(p.endTimeNanos || '0');
+              if (start && end) {
+                totalSleepMs += (end - start) / 1000000;
               }
+            });
+            sleepDurationHours = parseFloat((totalSleepMs / (1000 * 60 * 60)).toFixed(1));
+          }
+
+          if (stepsDataset?.point?.length > 0) {
+             stepsDataset.point.forEach((p: any) => {
+               const val = p.value?.[0]?.intVal || 0;
+               steps += val;
+             });
+          }
+
+          if (cardioDataset?.point?.length > 0) {
+             cardioDataset.point.forEach((p: any) => {
+               const val = p.value?.[0]?.fpVal || 0;
+               cardio += val;
+             });
+             cardio = Math.round(cardio);
           }
       }
 
-      // Add a state log for synced wearable data
       await addDoc(collection(db, 'logs'), {
         userId: auth.currentUser.uid,
         type: 'state',
         data: {
           moodTags: ['WEARABLE_SYNC'],
-          sleepDuration: sleepDurationHours || 7.5,
+          sleepDuration: sleepDurationHours,
+          steps: steps,
+          cardio: cardio,
           sleepQuality: 8,
           energy: 7,
           focus: 4
         },
         timestamp: serverTimestamp()
       });
-      const resultText = `Gespeichert: ${sleepDurationHours || 7.5} Stunden Schlaf synchronisiert.`;
+      const resultText = `Gespeichert: ${sleepDurationHours}h Schlaf, ${steps} Schritte, ${cardio} Kardiopunkte.`;
       setLastSyncResult(resultText);
       setMessage({ type: 'success', text: resultText });
       setTimeout(() => setMessage(null), 5000);

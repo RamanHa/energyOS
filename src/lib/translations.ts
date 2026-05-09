@@ -9,6 +9,7 @@ export const translations = {
       biomarkers: 'Biomarkers',
       interventions: 'Interventions',
       synthesis: 'Synthesis',
+      wearables: 'Objective Data',
       profile: 'Profile',
       disconnect: 'Disconnect',
       entityConnected: 'Entity Connected'
@@ -198,6 +199,26 @@ export const translations = {
       moodSection: 'Dominant Vectors',
       gamePlanSection: 'Week Ahead Game Plan',
       noData: 'Insufficient data points to generate synthesis. Keep logging.'
+    },
+    wearables: {
+      title: 'Objective Biological Data',
+      subTitle: 'Raw telemetry from integrated hardware',
+      connect: 'Connect Google Fit',
+      connecting: 'Connecting...',
+      sync: 'Sync Data',
+      disconnect: 'Disconnect Device',
+      syncing: 'Syncing Data...',
+      sleepTitle: 'Sleep Architecture (7 Days)',
+      hrTitle: 'Basal HR Trends (7 Days)',
+      stepsTitle: 'Step Count (7 Days)',
+      cardioTitle: 'Heart Points (7 Days)',
+      noData: 'No objective data found.',
+      hours: 'Hours',
+      bpm: 'BPM',
+      steps: 'Steps',
+      points: 'Points',
+      permissionError: 'Permission denied. Please reconnect.',
+      fetchError: 'Failed to fetch wearable data.'
     }
   },
   de: {
@@ -207,6 +228,7 @@ export const translations = {
       biomarkers: 'Biomarker',
       interventions: 'Interventionen',
       synthesis: 'Synthese',
+      wearables: 'Wearables',
       profile: 'Profil',
       disconnect: 'Verbindung trennen',
       entityConnected: 'Entität verbunden'
@@ -396,6 +418,26 @@ export const translations = {
       moodSection: 'Dominante Vektoren',
       gamePlanSection: 'Spielplan für nächste Woche',
       noData: 'Unzureichende Datenpunkte zur Generierung der Synthese. Bitte weiter loggen.'
+    },
+    wearables: {
+      title: 'Wearables',
+      subTitle: 'Rohe Telemetrie integrierter Hardware',
+      connect: 'Google Fit verbinden',
+      connecting: 'Verbinde...',
+      sync: 'Daten aktualisieren',
+      disconnect: 'Gerät trennen',
+      syncing: 'Daten werden synchronisiert...',
+      sleepTitle: 'Schlafarchitektur (7 Tage)',
+      hrTitle: 'Basale Herzfrequenz-Trends (7 Tage)',
+      stepsTitle: 'Schritte (7 Tage)',
+      cardioTitle: 'Kardiopunkte (7 Tage)',
+      noData: 'Keine objektiven Daten gefunden.',
+      hours: 'Stunden',
+      bpm: 'BPM',
+      steps: 'Schritte',
+      points: 'Punkte',
+      permissionError: 'Zugriff verweigert. Bitte erneut verbinden.',
+      fetchError: 'Fehler beim Abrufen der Wearable-Daten.'
     }
   }
 };

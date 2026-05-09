@@ -10,6 +10,12 @@ export async function fetchGoogleFitData(accessToken: string) {
       },
       {
         dataTypeName: 'com.google.heart_rate.bpm',
+      },
+      {
+        dataTypeName: 'com.google.step_count.delta',
+      },
+      {
+        dataTypeName: 'com.google.heart_minutes',
       }
     ],
     bucketByTime: { durationMillis: 86400000 },
@@ -28,7 +34,9 @@ export async function fetchGoogleFitData(accessToken: string) {
     });
 
     if (!response.ok) {
-      throw new Error(`Google Fit API error: ${response.status} ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error?.message || response.statusText;
+      throw new Error(`Google Fit API error ${response.status}: ${errorMessage}`);
     }
 
     const data = await response.json();

@@ -24,6 +24,7 @@ export const connectGoogleFit = async () => {
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/fitness.sleep.read');
     provider.addScope('https://www.googleapis.com/auth/fitness.heart_rate.read');
+    provider.addScope('https://www.googleapis.com/auth/fitness.activity.read');
     
     // We use signInWithPopup to add the scopes. This might re-authenticate the user if they are already logged in.
     const result = await signInWithPopup(auth, provider);

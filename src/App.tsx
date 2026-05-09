@@ -28,11 +28,12 @@ import LabVault from './components/LabVault';
 import SOSInterventions from './components/SOSInterventions';
 import Profile from './components/Profile';
 import Synthesis from './components/Synthesis';
+import Wearables from './components/Wearables';
 import Onboarding from './components/Onboarding';
 import { UserProfile } from './types';
 import { useLanguage } from './lib/LanguageContext';
 
-type Page = 'dashboard' | 'logs' | 'labs' | 'sos' | 'synthesis' | 'profile';
+type Page = 'dashboard' | 'logs' | 'labs' | 'sos' | 'synthesis' | 'wearables' | 'profile';
 
 export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -150,6 +151,7 @@ export default function App() {
       case 'labs': return <LabVault />;
       case 'sos': return <SOSInterventions />;
       case 'synthesis': return <Synthesis />;
+      case 'wearables': return <Wearables />;
       case 'profile': return <Profile />;
     }
   };
@@ -160,6 +162,7 @@ export default function App() {
     { id: 'labs', icon: FlaskConical, label: t.nav.biomarkers },
     { id: 'sos', icon: LifeBuoy, label: t.nav.interventions },
     { id: 'synthesis', icon: TrendingUp, label: t.nav.synthesis },
+    { id: 'wearables', icon: Activity, label: t.nav.wearables },
     { id: 'profile', icon: UserIcon, label: t.nav.profile },
   ];
 
