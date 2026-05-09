@@ -1,7 +1,17 @@
 import { GoogleGenAI } from "@google/genai";
 import { LogEntry } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiInstance: GoogleGenAI | null = null;
+function getAI(): GoogleGenAI {
+  if (!aiInstance) {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) {
+      throw new Error("GEMINI_API_KEY is not set.");
+    }
+    aiInstance = new GoogleGenAI({ apiKey: key });
+  }
+  return aiInstance;
+}
 
 export async function getHealthInsights(logs: LogEntry[]) {
   const model = "gemini-3-flash-preview";
@@ -23,7 +33,7 @@ export async function getHealthInsights(logs: LogEntry[]) {
   `;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model,
       contents: prompt,
       config: {
@@ -51,7 +61,7 @@ export async function getImmediateLogFeedback(log: LogEntry) {
   `;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model,
       contents: prompt
     });
