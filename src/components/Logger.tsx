@@ -19,6 +19,7 @@ export default function Logger({ onComplete }: LoggerProps) {
   const [success, setSuccess] = useState(false);
   const [aiFeedback, setAiFeedback] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [showAi, setShowAi] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const { t } = useLanguage();
 
@@ -114,6 +115,10 @@ export default function Logger({ onComplete }: LoggerProps) {
       
       setSuccess(true);
       
+      setTimeout(() => {
+        setShowAi(true);
+      }, 1500);
+      
       // Get AI Feedback
       setAiLoading(true);
       const feedback = await getImmediateLogFeedback({ type, data } as any);
@@ -137,39 +142,58 @@ export default function Logger({ onComplete }: LoggerProps) {
         >
           <Check className="text-black w-8 h-8" />
         </motion.div>
-        <h2 className="text-2xl font-bold tracking-tight text-white">{t.logger.success}</h2>
-        <p className="text-white/40 mt-2 font-light italic text-xs uppercase tracking-widest">{t.logger.successSub}</p>
-
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+        <motion.h2 
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mt-12 p-8 bg-white/5 border border-white/10 rounded-[2rem] w-full relative group overflow-hidden"
+          transition={{ delay: 0.1 }}
+          className="text-2xl font-bold tracking-tight text-white"
         >
-           <div className="absolute top-0 right-0 p-4 opacity-10">
-              <Sparkles size={48} className="text-emerald-500" />
-           </div>
-           
-           <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.4em] mb-4">{t.logger.aiFeedbackTitle}</h4>
-           
-           {aiLoading ? (
-             <div className="flex items-center justify-center py-4 gap-3 text-white/20">
-               <Loader2 size={16} className="animate-spin" />
-               <span className="text-[10px] uppercase font-mono tracking-widest">{t.logger.aiSynthesizing}</span>
-             </div>
-           ) : (
-             <p className="text-sm text-white/80 leading-relaxed font-light italic">
-               "{aiFeedback || t.logger.aiFallback}"
-             </p>
-           )}
-        </motion.div>
+          {t.logger.success}
+        </motion.h2>
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="text-white/40 mt-2 font-light italic text-xs uppercase tracking-widest"
+        >
+          {t.logger.successSub}
+        </motion.p>
 
-        <button 
+        {showAi && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0, marginTop: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginTop: 48 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="p-8 bg-white/5 border border-white/10 rounded-[2rem] w-full relative group overflow-hidden"
+          >
+             <div className="absolute top-0 right-0 p-4 opacity-10">
+                <Sparkles size={48} className="text-emerald-500" />
+             </div>
+             
+             <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.4em] mb-4">{t.logger.aiFeedbackTitle}</h4>
+             
+             {aiLoading ? (
+               <div className="flex items-center justify-center py-4 gap-3 text-white/20">
+                 <Loader2 size={16} className="animate-spin" />
+                 <span className="text-[10px] uppercase font-mono tracking-widest">{t.logger.aiSynthesizing}</span>
+               </div>
+             ) : (
+               <p className="text-sm text-white/80 leading-relaxed font-light italic">
+                 "{aiFeedback || t.logger.aiFallback}"
+               </p>
+             )}
+          </motion.div>
+        )}
+
+        <motion.button 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
           onClick={onComplete}
           className="mt-12 text-[10px] font-bold text-white/40 hover:text-white uppercase tracking-[0.3em] transition-colors"
         >
           {t.logger.returnButton}
-        </button>
+        </motion.button>
       </div>
     );
   }

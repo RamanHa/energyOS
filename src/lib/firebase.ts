@@ -19,6 +19,23 @@ export const loginWithGoogle = async () => {
   }
 };
 
+export const connectGoogleFit = async () => {
+  try {
+    const provider = new GoogleAuthProvider();
+    provider.addScope('https://www.googleapis.com/auth/fitness.sleep.read');
+    provider.addScope('https://www.googleapis.com/auth/fitness.heart_rate.read');
+    
+    // We use signInWithPopup to add the scopes. This might re-authenticate the user if they are already logged in.
+    const result = await signInWithPopup(auth, provider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    // Return credential so we can use credential.accessToken
+    return credential;
+  } catch (error) {
+    console.error('Error connecting Google Fit:', error);
+    throw error;
+  }
+};
+
 export const logout = () => auth.signOut();
 
 // Connection test as required by integration guidelines

@@ -47,9 +47,44 @@ export default function Dashboard() {
     .reverse()
     .map(l => ({
       time: format(l.timestamp?.toDate ? l.timestamp.toDate() : l.timestamp, 'HH:mm'),
+      date: format(l.timestamp?.toDate ? l.timestamp.toDate() : l.timestamp, 'MMM dd'),
       energy: (l.data as any).energy,
       focus: (l.data as any).focus,
+      tags: (l.data as any).moodTags || [],
     }));
+
+  const CustomEnergyTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-black/90 border border-white/10 p-4 rounded-xl backdrop-blur-md shadow-2xl min-w-[160px]">
+          <p className="text-[10px] text-white/40 mb-3 font-mono uppercase tracking-widest">{data.date} <span className="opacity-50">|</span> {label}</p>
+          {data.energy !== undefined && (
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs text-white/70">Energy</span>
+              <span className="text-xs font-bold text-emerald-400">{data.energy}/10</span>
+            </div>
+          )}
+          {data.focus !== undefined && (
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs text-white/70">Focus</span>
+              <span className="text-xs font-bold text-blue-400">{data.focus}/5</span>
+            </div>
+          )}
+          {data.tags && data.tags.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-white/10 flex flex-wrap gap-1.5">
+              {data.tags.map((tag: string, idx: number) => (
+                <span key={idx} className="text-[8px] uppercase tracking-widest bg-white/10 text-white/70 px-2 py-0.5 rounded-full">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="space-y-10">
@@ -156,10 +191,7 @@ export default function Dashboard() {
                 axisLine={false}
                 domain={[0, 10]}
               />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '10px' }}
-                itemStyle={{ color: '#fff' }}
-              />
+              <Tooltip content={<CustomEnergyTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '3 3' }} />
               <Line 
                 type="monotone" 
                 dataKey="energy" 
@@ -179,6 +211,173 @@ export default function Dashboard() {
               />
             </LineChart>
           </ResponsiveContainer>
+        </div>
+      </section>
+
+      {/* Sleep Quality Visualization */}
+      <section className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-lg font-bold text-white tracking-tight">Sleep Quality</h2>
+            <p className="text-xs text-white/40 italic">Recovery scores over time</p>
+          </div>
+          <div className="flex gap-4">
+            <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-tighter bg-purple-500/10 border border-purple-500/20 px-3 py-1 rounded-full text-purple-400">
+               <div className="w-1.5 h-1.5 rounded-full bg-purple-500" /> Quality
+            </div>
+          </div>
+        </div>
+        
+        <div className="h-[280px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            {(() => {
+              const sleepData = logs
+                .filter(l => l.type === 'state' && (l.data as any).sleepQuality !== undefined)
+                .slice(0, 14)
+                .reverse()
+                .map(l => ({
+                  time: format(l.timestamp?.toDate ? l.timestamp.toDate() : l.timestamp, 'MMM dd'),
+                  quality: (l.data as any).sleepQuality,
+                  duration: (l.data as any).sleepDuration,
+                  rem: (l.data as any).remSleep,
+                  deep: (l.data as any).deepSleep,
+                  light: (l.data as any).lightSleep,
+                }));
+
+              if (sleepData.length === 0) {
+                return (
+                  <div className="flex h-full items-center justify-center text-xs text-white/30 italic">
+                    No sleep data available yet.
+                  </div>
+                );
+              }
+
+              const CustomSleepTooltip = ({ active, payload, label }: any) => {
+                if (active && payload && payload.length) {
+                  const data = payload[0].payload;
+                  return (
+                    <div className="bg-black/90 border border-white/10 p-4 rounded-xl backdrop-blur-md shadow-2xl min-w-[180px]">
+                      <p className="text-[10px] text-white/40 mb-3 font-mono uppercase tracking-widest">{label}</p>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-white">Quality</span>
+                        <span className="text-sm font-bold text-purple-400">{data.quality}/10</span>
+                      </div>
+                      
+                      {data.duration && (
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] text-white/60">Total Duration</span>
+                          <span className="text-[10px] font-mono text-white/80">{data.duration}h</span>
+                        </div>
+                      )}
+                      
+                      {(data.rem !== undefined || data.deep !== undefined || data.light !== undefined) && (
+                        <div className="mt-3 pt-3 border-t border-white/10 grid grid-cols-3 gap-2">
+                          {data.rem !== undefined && (
+                             <div className="text-center">
+                               <p className="text-[8px] uppercase tracking-tighter text-white/40 mb-1">REM</p>
+                               <p className="text-[10px] font-mono text-blue-300">{data.rem}h</p>
+                             </div>
+                          )}
+                          {data.deep !== undefined && (
+                             <div className="text-center border-l border-white/5">
+                               <p className="text-[8px] uppercase tracking-tighter text-white/40 mb-1">Deep</p>
+                               <p className="text-[10px] font-mono text-purple-300">{data.deep}h</p>
+                             </div>
+                          )}
+                          {data.light !== undefined && (
+                             <div className="text-center border-l border-white/5">
+                               <p className="text-[8px] uppercase tracking-tighter text-white/40 mb-1">Light</p>
+                               <p className="text-[10px] font-mono text-emerald-300">{data.light}h</p>
+                             </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                return null;
+              };
+
+              return (
+                <LineChart data={sleepData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                  <XAxis 
+                    dataKey="time" 
+                    stroke="#ffffff20" 
+                    fontSize={10} 
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    stroke="#ffffff20" 
+                    fontSize={10} 
+                    tickLine={false}
+                    axisLine={false}
+                    domain={[0, 10]}
+                  />
+                  <Tooltip content={<CustomSleepTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '3 3' }} />
+                  <Line 
+                    type="monotone" 
+                    dataKey="quality" 
+                    stroke="#a855f7" 
+                    strokeWidth={3} 
+                    dot={{ r: 4, fill: '#a855f7' }}
+                    activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              );
+            })()}
+          </ResponsiveContainer>
+        </div>
+      </section>
+
+      {/* Mood Visualization */}
+      <section className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
+        <div className="mb-6">
+          <h3 className="text-xs uppercase tracking-[0.2em] font-bold text-white/80">Dominant State Vectors</h3>
+          <p className="text-[10px] text-white/40 italic mt-1">Frequency of psychological states logged over time</p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          {(() => {
+            const moodFreq: Record<string, number> = {};
+            logs.filter(l => l.type === 'state').forEach(l => {
+              const data = l.data as any;
+              if (data.moodTags) {
+                data.moodTags.forEach((tag: string) => {
+                  moodFreq[tag] = (moodFreq[tag] || 0) + 1;
+                });
+              }
+            });
+            const sortedMoods = Object.entries(moodFreq).sort((a, b) => b[1] - a[1]);
+            
+            if (sortedMoods.length === 0) {
+              return <div className="text-xs text-white/30 italic">No state tags recorded yet.</div>;
+            }
+
+            const maxFreq = sortedMoods[0][1];
+            
+            return sortedMoods.map(([tag, freq], idx) => {
+              const intensity = 0.3 + (freq / maxFreq) * 0.7; // 0.3 to 1.0
+              const size = 10 + (freq / maxFreq) * 6; // 10px to 16px
+              return (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: idx * 0.05 }}
+                  key={tag}
+                  className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-2"
+                  style={{ opacity: intensity }}
+                >
+                  <span className="text-emerald-400 font-bold uppercase tracking-widest" style={{ fontSize: `${size}px` }}>
+                    {tag}
+                  </span>
+                  <span className="text-white/40 text-[9px] font-mono bg-black/40 px-1.5 py-0.5 rounded-md">
+                    {freq}
+                  </span>
+                </motion.div>
+              );
+            });
+          })()}
         </div>
       </section>
 

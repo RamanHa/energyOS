@@ -48,6 +48,47 @@ export async function getHealthInsights(logs: LogEntry[]) {
   }
 }
 
+export async function generateWeeklySynthesis(logs: LogEntry[]) {
+  const model = "gemini-3-flash-preview";
+
+  const logSummary = logs.map(log => ({
+    type: log.type,
+    time: new Date(log.timestamp?.toDate ? log.timestamp.toDate() : log.timestamp).toLocaleString(),
+    details: log.data
+  }));
+
+  const prompt = `
+    You are an advanced Bio-hacking AI coach (EnergyOS). You are generating a deep-dive, narrative weekly summary authored by you.
+    Analyze these logs from the past week.
+    Generate a JSON object with the following exact structure:
+    {
+      "summary": "A 2-3 sentence narrative describing the user's overall trajectory and physiological state this week.",
+      "challenges": ["challenge 1", "challenge 2"],
+      "wins": ["win 1", "win 2"],
+      "moodVectors": ["Dominant mood trend 1", "Dominant mood trend 2"],
+      "gamePlan": "A brief actionable protocol or strategy for the upcoming week based on this data."
+    }
+
+    Logs to analyze:
+    ${JSON.stringify(logSummary, null, 2)}
+  `;
+
+  try {
+    const response = await getAI().models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+
+    return JSON.parse(response.text || "{}");
+  } catch (error) {
+    console.error("Gemini Synthesis Error:", error);
+    return null;
+  }
+}
+
 export async function getImmediateLogFeedback(log: LogEntry) {
   const model = "gemini-3-flash-preview";
   

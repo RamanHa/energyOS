@@ -8,6 +8,7 @@ export const translations = {
       logData: 'Log Data',
       biomarkers: 'Biomarkers',
       interventions: 'Interventions',
+      synthesis: 'Synthesis',
       profile: 'Profile',
       disconnect: 'Disconnect',
       entityConnected: 'Entity Connected'
@@ -118,6 +119,11 @@ export const translations = {
       subTitle: 'Management of the N=1 core profile',
       personal: 'Personal Information',
       goals: 'Biomarker Targets',
+      integrations: 'Wearable Sync',
+      connectGoogleFit: 'Connect Google Fit',
+      connectedGoogleFit: 'Google Fit Connected',
+      syncGoogleFit: 'Sync Wearable Data',
+      syncingGoogleFit: 'Syncing...',
       save: 'Update Profile',
       saving: 'Updating...',
       success: 'Profile Updated',
@@ -180,6 +186,18 @@ export const translations = {
       syncing: 'Syncing...',
       optimized: 'Biomarkers Optimized',
       user: 'User'
+    },
+    synthesis: {
+      title: 'Biological Synthesis',
+      subTitle: 'AI-authored weekly state breakdown',
+      generateBtn: 'Generate Weekly Synthesis',
+      generating: 'Synthesizing Neural & Meta Data...',
+      summarySection: 'Trajectory Summary',
+      challengesSection: 'Primary Challenges',
+      winsSection: 'Metabolic & Mental Wins',
+      moodSection: 'Dominant Vectors',
+      gamePlanSection: 'Week Ahead Game Plan',
+      noData: 'Insufficient data points to generate synthesis. Keep logging.'
     }
   },
   de: {
@@ -188,6 +206,7 @@ export const translations = {
       logData: 'Daten loggen',
       biomarkers: 'Biomarker',
       interventions: 'Interventionen',
+      synthesis: 'Synthese',
       profile: 'Profil',
       disconnect: 'Verbindung trennen',
       entityConnected: 'Entität verbunden'
@@ -298,6 +317,11 @@ export const translations = {
       subTitle: 'Verwaltung des N=1 Kernprofils',
       personal: 'Persönliche Informationen',
       goals: 'Biomarker-Zielwerte',
+      integrations: 'Wearable Sync',
+      connectGoogleFit: 'Google Fit verbinden',
+      connectedGoogleFit: 'Google Fit verbunden',
+      syncGoogleFit: 'Wearable Daten synchronisieren',
+      syncingGoogleFit: 'Synchronisierung...',
       save: 'Profil aktualisieren',
       saving: 'Aktualisierung...',
       success: 'Profil aktualisiert',
@@ -360,6 +384,18 @@ export const translations = {
       syncing: 'Synchronisierung...',
       optimized: 'Biomarker optimiert',
       user: 'Benutzer'
+    },
+    synthesis: {
+      title: 'Biologische Synthese',
+      subTitle: 'KI-erstellte wöchentliche Zustandsaufschlüsselung',
+      generateBtn: 'Wöchentliche Synthese generieren',
+      generating: 'Synthetisiere neuronale & Metadaten...',
+      summarySection: 'Verlauf Zusammenfassung',
+      challengesSection: 'HauptHerausforderungen',
+      winsSection: 'Stoffwechsel & Mentale Erfolge',
+      moodSection: 'Dominante Vektoren',
+      gamePlanSection: 'Spielplan für nächste Woche',
+      noData: 'Unzureichende Datenpunkte zur Generierung der Synthese. Bitte weiter loggen.'
     }
   }
 };

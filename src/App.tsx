@@ -27,11 +27,12 @@ import Logger from './components/Logger';
 import LabVault from './components/LabVault';
 import SOSInterventions from './components/SOSInterventions';
 import Profile from './components/Profile';
+import Synthesis from './components/Synthesis';
 import Onboarding from './components/Onboarding';
 import { UserProfile } from './types';
 import { useLanguage } from './lib/LanguageContext';
 
-type Page = 'dashboard' | 'logs' | 'labs' | 'sos' | 'profile';
+type Page = 'dashboard' | 'logs' | 'labs' | 'sos' | 'synthesis' | 'profile';
 
 export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -148,6 +149,7 @@ export default function App() {
       case 'logs': return <Logger onComplete={() => setActivePage('dashboard')} />;
       case 'labs': return <LabVault />;
       case 'sos': return <SOSInterventions />;
+      case 'synthesis': return <Synthesis />;
       case 'profile': return <Profile />;
     }
   };
@@ -157,6 +159,7 @@ export default function App() {
     { id: 'logs', icon: Brain, label: t.nav.logData },
     { id: 'labs', icon: FlaskConical, label: t.nav.biomarkers },
     { id: 'sos', icon: LifeBuoy, label: t.nav.interventions },
+    { id: 'synthesis', icon: TrendingUp, label: t.nav.synthesis },
     { id: 'profile', icon: UserIcon, label: t.nav.profile },
   ];
 
